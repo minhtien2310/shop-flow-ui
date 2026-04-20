@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import type { PaginatedList } from '../models/pagination.model';
 import type { ProductDetail, ProductListItem } from '../models/product.model';
 import type {
@@ -10,7 +10,7 @@ import type {
 } from '../models/product-requests.model';
 import type { Category } from '../models/category.model';
 import type { ProductVariant } from '../models/product-variant.model';
-import type { Inventory, ReserveInventoryRequest } from '../models/inventory.model';
+import type { AdjustInventoryRequest, Inventory, ReserveInventoryRequest } from '../models/inventory.model';
 import { EnvironmentService } from './environment.service';
 
 @Injectable({ providedIn: 'root' })
@@ -80,5 +80,14 @@ export class ProductApiService {
 
   reserveInventory(variantId: string, body: ReserveInventoryRequest) {
     return this.http.post<Inventory>(`${this.env.apiUrl}/variants/${variantId}/inventory:reserve`, body);
+  }
+
+  adjustInventory(variantId: string, body: AdjustInventoryRequest) {
+    const headers = new HttpHeaders({
+      'Idempotency-Key': crypto.randomUUID()
+    });
+    return this.http.post<Inventory>(`${this.env.apiUrl}/variants/${variantId}/inventory:adjust`, body, {
+      headers
+    });
   }
 }

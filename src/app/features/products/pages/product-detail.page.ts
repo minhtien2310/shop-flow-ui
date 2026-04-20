@@ -119,6 +119,34 @@ import { ToastService } from '../../../core/services/toast.service';
                 >
                   Reserve 1 unit
                 </button>
+                <div class="mt-4 border-t border-slate-800 pt-4">
+                  <p class="text-xs font-medium text-slate-400">Adjust stock <span class="text-slate-500">(admin)</span></p>
+                  <label class="mt-2 block text-xs text-slate-500">Delta (+ restock / − shrink)</label>
+                  <input
+                    type="number"
+                    class="mt-1 w-full rounded-md border border-slate-700 bg-slate-950 px-2 py-1.5 text-sm text-white"
+                    [value]="adjustDelta()"
+                    (input)="onAdjustDeltaInput($event)"
+                  />
+                  <label class="mt-2 block text-xs text-slate-500">Reason</label>
+                  <select
+                    class="mt-1 w-full rounded-md border border-slate-700 bg-slate-950 px-2 py-1.5 text-sm text-white"
+                    [value]="adjustReasonCode()"
+                    (change)="onAdjustReasonChange($event)"
+                  >
+                    @for (opt of adjustReasonOptions; track opt.code) {
+                      <option [value]="opt.code">{{ opt.label }}</option>
+                    }
+                  </select>
+                  <button
+                    type="button"
+                    class="mt-3 w-full rounded-md border border-slate-600 py-2 text-sm font-medium text-slate-100 hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-40"
+                    [disabled]="adjustBusy()"
+                    (click)="adjustStock(v.productVariantId)"
+                  >
+                    Apply adjustment
+                  </button>
+                </div>
                 }
               }
             </section>
@@ -143,6 +171,18 @@ export class ProductDetailPage implements OnInit {
   readonly inventory = signal<Inventory | null>(null);
   readonly inventoryLoading = signal(false);
   readonly reserveBusy = signal(false);
+  readonly adjustBusy = signal(false);
+  readonly adjustDelta = signal('');
+  /** API movement reason: PURCHASE | RETURN | DAMAGE | ADJUSTMENT */
+  readonly adjustReasonCode = signal('ADJUSTMENT');
+
+  readonly adjustReasonOptions = [
+    { code: 'ADJUSTMENT', label: 'Adjustment / cycle count' },
+    { code: 'PURCHASE', label: 'Purchase / inbound' },
+    { code: 'RETURN', label: 'Customer return' },
+    { code: 'DAMAGE', label: 'Damage / write-off' }
+  ] as const;
+
   readonly busy = signal(false);
 
   ngOnInit(): void {
@@ -164,6 +204,8 @@ export class ProductDetailPage implements OnInit {
           this.loading.set(false);
           const first = p.variants[0] ?? null;
           this.selected.set(first);
+          this.adjustDelta.set('');
+          this.adjustReasonCode.set('ADJUSTMENT');
           if (first) {
             this.loadInventory(first.productVariantId);
           }
@@ -174,7 +216,19 @@ export class ProductDetailPage implements OnInit {
 
   selectVariant(v: ProductVariant): void {
     this.selected.set(v);
+    this.adjustDelta.set('');
+    this.adjustReasonCode.set('ADJUSTMENT');
     this.loadInventory(v.productVariantId);
+  }
+
+  onAdjustDeltaInput(event: Event): void {
+    const el = event.target as HTMLInputElement;
+    this.adjustDelta.set(el.value);
+  }
+
+  onAdjustReasonChange(event: Event): void {
+    const el = event.target as HTMLSelectElement;
+    this.adjustReasonCode.set(el.value);
   }
 
   private loadInventory(variantId: string): void {
@@ -198,6 +252,33 @@ export class ProductDetailPage implements OnInit {
       },
       error: () => this.reserveBusy.set(false)
     });
+  }
+
+  adjustStock(variantId: string): void {
+    const raw = this.adjustDelta().trim();
+    const delta = Number(raw);
+    if (!Number.isFinite(delta) || delta === 0) {
+      this.toast.error('Enter a non-zero delta.');
+      return;
+    }
+    const reason = this.adjustReasonCode().trim();
+    this.adjustBusy.set(true);
+    this.api
+      .adjustInventory(variantId, {
+        delta,
+        reason,
+        referenceId: `ui-adjust-${Date.now()}`
+      })
+      .subscribe({
+        next: (inv) => {
+          this.inventory.set(inv);
+          this.adjustDelta.set('');
+          this.adjustReasonCode.set('ADJUSTMENT');
+          this.toast.success('Stock adjusted');
+          this.adjustBusy.set(false);
+        },
+        error: () => this.adjustBusy.set(false)
+      });
   }
 
   publish(): void {
