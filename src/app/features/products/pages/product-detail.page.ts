@@ -1,4 +1,4 @@
-import { DatePipe, DecimalPipe, JsonPipe } from '@angular/common';
+import { DecimalPipe, JsonPipe, NgClass } from '@angular/common';
 import { ChangeDetectionStrategy, Component, DestroyRef, inject, OnInit, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, RouterLink } from '@angular/router';
@@ -13,7 +13,7 @@ import { ToastService } from '../../../core/services/toast.service';
 @Component({
   standalone: true,
   selector: 'app-product-detail-page',
-  imports: [RouterLink, DatePipe, DecimalPipe, JsonPipe],
+  imports: [RouterLink, DecimalPipe, JsonPipe, NgClass],
   template: `
     @if (loading()) {
       <div class="space-y-3">
@@ -21,7 +21,8 @@ import { ToastService } from '../../../core/services/toast.service';
           <div class="h-10 animate-pulse rounded bg-slate-800"></div>
         }
       </div>
-    } @else if (product(); as p) {
+    } @else {
+      @if (product(); as p) {
       <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div>
           <p class="text-xs uppercase text-slate-500">Product</p>
@@ -88,9 +89,10 @@ import { ToastService } from '../../../core/services/toast.service';
                 <button
                   type="button"
                   class="w-full rounded-lg border px-3 py-2 text-left text-sm transition"
-                  [class.border-emerald-500]="selected()?.productVariantId === v.productVariantId"
-                  [class.bg-emerald-950/30]="selected()?.productVariantId === v.productVariantId"
-                  [class.border-slate-700]="selected()?.productVariantId !== v.productVariantId"
+                  [ngClass]="{
+                    'border-emerald-500 bg-emerald-950/30': selected()?.productVariantId === v.productVariantId,
+                    'border-slate-700': selected()?.productVariantId !== v.productVariantId
+                  }"
                   (click)="selectVariant(v)"
                 >
                   <div class="font-medium text-white">{{ v.sku }}</div>
@@ -105,7 +107,8 @@ import { ToastService } from '../../../core/services/toast.service';
               <h2 class="mb-2 text-sm font-semibold uppercase text-slate-400">Stock</h2>
               @if (inventoryLoading()) {
                 <p class="text-sm text-slate-500">Loading inventory…</p>
-              } @else if (inventory(); as inv) {
+              } @else {
+                @if (inventory(); as inv) {
                 <p class="text-sm text-slate-300">Available: <strong class="text-white">{{ inv.available }}</strong></p>
                 <p class="text-xs text-slate-500">Qty {{ inv.quantity }} · Reserved {{ inv.reserved }}</p>
                 <button
@@ -116,11 +119,13 @@ import { ToastService } from '../../../core/services/toast.service';
                 >
                   Reserve 1 unit
                 </button>
+                }
               }
             </section>
           }
         </div>
       </div>
+      }
     }
   `,
   changeDetection: ChangeDetectionStrategy.OnPush

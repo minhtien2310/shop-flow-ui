@@ -1,4 +1,4 @@
-import { DatePipe } from '@angular/common';
+import { DatePipe, NgClass } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -19,7 +19,7 @@ import type { Category } from '../../../core/models/category.model';
 @Component({
   standalone: true,
   selector: 'app-product-list-page',
-  imports: [RouterLink, ReactiveFormsModule, DatePipe],
+  imports: [RouterLink, ReactiveFormsModule, DatePipe, NgClass],
   template: `
     <div class="mb-6 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
       <div>
@@ -96,9 +96,11 @@ import type { Category } from '../../../core/models/category.model';
                 <td class="px-4 py-3">
                   <span
                     class="rounded-full px-2 py-0.5 text-xs"
-                    [class.bg-amber-900/50]="p.status === 'DRAFT'"
-                    [class.bg-emerald-900/50]="p.status === 'ACTIVE'"
-                    [class.bg-slate-700]="p.status === 'ARCHIVED'"
+                    [ngClass]="{
+                      'bg-amber-900/50': p.status === 'DRAFT',
+                      'bg-emerald-900/50': p.status === 'ACTIVE',
+                      'bg-slate-700': p.status === 'ARCHIVED'
+                    }"
                     >{{ p.status }}</span
                   >
                 </td>

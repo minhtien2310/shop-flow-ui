@@ -116,7 +116,7 @@ export class ProductEditPage implements OnInit {
   private productId: string | null = null;
   private loadedVersion = 0;
 
-  readonly form = this.fb.group({
+  readonly form = this.fb.nonNullable.group({
     categoryId: ['', Validators.required],
     title: ['', Validators.required],
     slug: ['', Validators.required],

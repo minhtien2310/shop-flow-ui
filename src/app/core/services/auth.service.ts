@@ -1,4 +1,4 @@
-import { Injectable, computed, signal } from '@angular/core';
+import { Injectable, computed, inject, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { tap } from 'rxjs/operators';
@@ -24,7 +24,7 @@ export class AuthService {
 
   login(body: LoginRequest) {
     return this.http.post<AuthResponse>(`${this.env.apiUrl}/auth/login`, body).pipe(
-      tap((res) => {
+      tap((res: AuthResponse) => {
         localStorage.setItem(TOKEN_KEY, res.accessToken);
         localStorage.setItem(REFRESH_KEY, res.refreshToken);
         this.accessToken.set(res.accessToken);
